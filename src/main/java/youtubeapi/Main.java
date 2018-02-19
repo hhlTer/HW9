@@ -7,6 +7,7 @@ import entiti.Item;
 import entiti.Responce;
 import entiti.SnippetVideo;
 import javafx.application.Application;
+import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Cursor;
@@ -92,7 +93,6 @@ public class Main extends Application {
 
 //-----------------------------Pool-----------------------------------------
         ExecutorService service = Executors.newFixedThreadPool(1);
-
         searchButton.setOnMouseClicked(event -> {
             Callable<VBox> toLeft = () -> {
                 try {
@@ -104,11 +104,13 @@ public class Main extends Application {
                 }
             return null;
             };
-            FutureTask<VBox> task = new FutureTask<>(toLeft);
+
+            Future<VBox> vBoxFuture = service.submit(toLeft);
             try {
-                VBox vBox = task.get();
-                left.getChildren().addAll(vBox.getChildren());
-            } catch (InterruptedException | ExecutionException e) {
+                left.getChildren().addAll(vBoxFuture.get().getChildren());
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            } catch (ExecutionException e) {
                 e.printStackTrace();
             }
             mainPane.setLeft(left);
