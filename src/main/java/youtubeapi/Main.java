@@ -14,6 +14,7 @@ import javafx.scene.Cursor;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.TextField;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
@@ -93,7 +94,7 @@ public class Main extends Application {
 
 //-----------------------------Pool-----------------------------------------
         ExecutorService service = Executors.newFixedThreadPool(1);
-        searchButton.setOnMouseClicked(event -> {
+        searchButton.setOnMouseClicked((MouseEvent event) -> {
             Callable<VBox> toLeft = () -> {
                 try {
                     Responce responce = YoutubeAPI.search(searchField.getText(), 15);
@@ -106,13 +107,16 @@ public class Main extends Application {
             };
 
             Future<VBox> vBoxFuture = service.submit(toLeft);
-            try {
-                left.getChildren().addAll(vBoxFuture.get().getChildren());
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            } catch (ExecutionException e) {
-                e.printStackTrace();
-            }
+                Platform.runLater(() -> {
+                    try {
+                        left.getChildren().addAll(vBoxFuture.get().getChildren());
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    } catch (ExecutionException e) {
+                        e.printStackTrace();
+                    }
+                }
+                );
             mainPane.setLeft(left);
 //                Responce s = YoutubeAPI.search(searchField.getText(), 1);
 //                nameText.setText("Name: " + s.items[0].snippet.title);
