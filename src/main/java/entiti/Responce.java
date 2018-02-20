@@ -1,5 +1,5 @@
 package entiti;
 
 public class Responce{
-    public Item<SnippetVideo>[] items;
+    public Item<SnippetVideo, Id>[] items;
 }

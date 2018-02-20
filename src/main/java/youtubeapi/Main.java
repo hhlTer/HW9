@@ -9,10 +9,13 @@ import entiti.SnippetVideo;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.geometry.Insets;
+import javafx.geometry.Orientation;
 import javafx.geometry.Pos;
 import javafx.scene.Cursor;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
+import javafx.scene.control.RadioButton;
+import javafx.scene.control.ScrollBar;
 import javafx.scene.control.TextField;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.BorderPane;
@@ -39,6 +42,7 @@ public class Main extends Application {
     static Media media;// = new Media(new File("/home/valeriy/Downloads/gojavabonus2.mp4").toURI().toString());
     private static MediaPlayer player;// = new MediaPlayer(media);
 
+    private ResponceContainer[] containers;
 
     public static void main(String[] args) {
         launch(args);
@@ -64,8 +68,6 @@ public class Main extends Application {
         Text channelText = new Text("Channel: ");
         Text dateText = new Text("Date: ");
 
-//        top.setPadding(new Insets(15));
-
         Button playButton = new Button("Play");
         Button searchButton = new Button ("Start search");
 
@@ -73,7 +75,11 @@ public class Main extends Application {
         top.setStyle("-fx-background-color: GAINSBORO");
         top.setSpacing(3);
         mainPane.setTop(top);
-        //left
+
+//left
+        ScrollBar scrollBar = new ScrollBar();
+        scrollBar.setOrientation(Orientation.VERTICAL);
+        left.getChildren().add(scrollBar);
 
         left.setPadding(new Insets(15,15,10,10));
         left.setSpacing(10);
@@ -93,13 +99,19 @@ public class Main extends Application {
         primaryStage.show();
 
 //-----------------------------Pool-----------------------------------------
-        ExecutorService service = Executors.newFixedThreadPool(1);
         searchButton.setOnMouseClicked((MouseEvent event) -> {
+            ExecutorService service = Executors.newFixedThreadPool(3);
+            if (left.getChildren().size() > 1) left.getChildren().clear();
             Callable<VBox> toLeft = () -> {
                 try {
-                    Responce responce = YoutubeAPI.search(searchField.getText(), 15);
+                    Responce responce = YoutubeAPI.search(searchField.getText(), 10);
                     SearchResult searchResult = new SearchResult(responce);
-                    return searchResult.getVBox();
+                    this.containers = searchResult.getContainers();
+                    VBox vBoxCallable = new VBox();
+                    for (ResponceContainer container : containers) {
+                        vBoxCallable.getChildren().addAll(container.getNodeList());
+                    }
+                    return vBoxCallable;
                 } catch (UnirestException e) {
                     e.printStackTrace();
                 }
@@ -110,30 +122,30 @@ public class Main extends Application {
                 Platform.runLater(() -> {
                     try {
                         left.getChildren().addAll(vBoxFuture.get().getChildren());
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    } catch (ExecutionException e) {
+                    } catch (InterruptedException | ExecutionException e) {
                         e.printStackTrace();
                     }
-                }
-                );
+                });
+
             mainPane.setLeft(left);
-//                Responce s = YoutubeAPI.search(searchField.getText(), 1);
-//                nameText.setText("Name: " + s.items[0].snippet.title);
-//                channelText.setText("Chanel: " + s.items[0].snippet.channelTitle);
-//                System.out.println();
-        });
+            service.shutdown();
+        });//event->onMouseClicked
 
         playButton.setOnAction((event)-> {
                     //unirest include
 
+                    RadioButton selected = (RadioButton) SearchResult.toggleGroup.getSelectedToggle();
+                    System.out.println(selected.getId());
+                    center.getChildren().clear();
 
                     WebView webview = new WebView();
                     webview.getEngine().load(
-                            "https://www.youtube.com/watch?v=XzJvZ9QE_Kw=1"
+                            "https://www.youtube.com/embed/" + selected.getId()
                     );
                     webview.setPrefSize(640, 390);
                     center.getChildren().add(webview);
+
+
 //                    media = new Media(new File("/home/valeriy/Downloads/videoplayback (5).mp4").toURI().toString());
 //                    try {
 //                        URL url = new URL("http://download.oracle.com/otndocs/products/javafx/oow2010-2.flv");
