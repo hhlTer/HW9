@@ -8,15 +8,14 @@ import entiti.Responce;
 import entiti.SnippetVideo;
 import javafx.application.Application;
 import javafx.application.Platform;
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableValue;
 import javafx.geometry.Insets;
 import javafx.geometry.Orientation;
 import javafx.geometry.Pos;
 import javafx.scene.Cursor;
 import javafx.scene.Scene;
-import javafx.scene.control.Button;
-import javafx.scene.control.RadioButton;
-import javafx.scene.control.ScrollBar;
-import javafx.scene.control.TextField;
+import javafx.scene.control.*;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
@@ -34,6 +33,7 @@ import java.io.File;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.util.List;
 import java.util.concurrent.*;
 
 
@@ -42,44 +42,71 @@ public class Main extends Application {
     static Media media;// = new Media(new File("/home/valeriy/Downloads/gojavabonus2.mp4").toURI().toString());
     private static MediaPlayer player;// = new MediaPlayer(media);
 
-    private ResponceContainer[] containers;
+    private List<ResponceContainer> containers;
 
     public static void main(String[] args) {
         launch(args);
     }
     private BorderPane mainPane = new BorderPane();
     private VBox left = new VBox();
-    private VBox right = new VBox();
     private VBox center = new VBox();
+
     private VBox top = new VBox();
-    private HBox bottom = new HBox();
+    private HBox toTop = new HBox();
+
+    private ScrollPane scrollPane = new ScrollPane();
+    private static WebView webview;
 
     @Override
     public void start(Stage primaryStage) throws Exception {
+        new UnirestSerialization();
         setParam(primaryStage);
+
+        //toTop
+        Button playButton = new Button("Play");
+        Button searchButton = new Button ("Start search");
+        CheckBox checkBox = new CheckBox("Advanced");
+        TextField dateField = new TextField();
+        dateField.setText("Days");
+        TextField countField = new TextField();
+        countField.setText("Count");
+        playButton.setDisable(true);
+
+        checkBox.selectedProperty().addListener((observable, oldValue, newValue) -> {
+            if (!oldValue)
+            {
+                toTop.getChildren().remove(playButton);
+                toTop.getChildren().add(dateField);
+                toTop.getChildren().add(countField);
+                toTop.getChildren().add(playButton);
+            }
+            else {
+                toTop.getChildren().remove(playButton);
+                toTop.getChildren().remove(dateField);
+                toTop.getChildren().remove(countField);
+                toTop.getChildren().add(playButton);
+            }
+        });
+
+        toTop.setSpacing(5);
+        toTop.setStyle("-fx-background-color: GAINSBORO");
+        toTop.getChildren().addAll(searchButton, checkBox, playButton);
 
         //top
 
         Text title = new Text("->");
         title.setFill(Color.BLUE);
-
         TextField searchField = new TextField();
-        Text nameText = new Text("Name: ");
-        Text channelText = new Text("Channel: ");
-        Text dateText = new Text("Date: ");
 
-        Button playButton = new Button("Play");
-        Button searchButton = new Button ("Start search");
-
-        top.getChildren().addAll(searchField,nameText,channelText,dateText,playButton, searchButton);
+        top.getChildren().addAll(searchField, toTop);
         top.setStyle("-fx-background-color: GAINSBORO");
         top.setSpacing(3);
+
         mainPane.setTop(top);
 
 //left
-        ScrollBar scrollBar = new ScrollBar();
-        scrollBar.setOrientation(Orientation.VERTICAL);
-        left.getChildren().add(scrollBar);
+        Text resultOfMax = new Text();
+        left.getChildren().add(resultOfMax);
 
         left.setPadding(new Insets(15,15,10,10));
         left.setSpacing(10);
@@ -104,13 +131,19 @@ public class Main extends Application {
             if (left.getChildren().size() > 1) left.getChildren().clear();
             Callable<VBox> toLeft = () -> {
                 try {
-                    Responce responce = YoutubeAPI.search(searchField.getText(), 5);
+                    Responce responce;
+                    if (checkBox.isSelected())
+                        responce = YoutubeAPI.search(searchField.getText(), countField.getText(), dateField.getText());
+                    else
+                        responce = YoutubeAPI.search(searchField.getText(), -1, -1);
+                    resultOfMax.setText("Total video: " + responce.items.length);
                     SearchResult searchResult = new SearchResult(responce);
                     this.containers = searchResult.getContainers();
                     VBox vBoxCallable = new VBox();
-                    System.out.println("containers.length:" + containers.length);
-                    for (int i = 0; i < containers.length; i++) {
-                        vBoxCallable.getChildren().addAll(containers[i].getNodeList());
+//                    System.out.println("containers.length:" + containers.size());
+                    for (ResponceContainer conteiner:
+                         containers) {
+                        vBoxCallable.getChildren().addAll(conteiner.getNodeList());
                     }
                     return vBoxCallable;
                 } catch (UnirestException e) {
@@ -123,22 +156,23 @@ public class Main extends Application {
                 Platform.runLater(() -> {
                     try {
                         left.getChildren().addAll(vBoxFuture.get().getChildren());
+                        scrollPane.setContent(left);
+                        mainPane.setLeft(scrollPane);
+                        playButton.setDisable(false);
                     } catch (InterruptedException | ExecutionException e) {
                         e.printStackTrace();
                     }
                 });
-            mainPane.setLeft(left);
             service.shutdown();
-        });//event->onMouseClicked
+            });//event->onMouseClicked: SearchButton
 
         playButton.setOnAction((event)-> {
-                    //unirest include
-
                     RadioButton selected = (RadioButton) SearchResult.toggleGroup.getSelectedToggle();
-                    System.out.println(selected.getId());
-                    center.getChildren().clear();
-
-                    WebView webview = new WebView();
+//                    System.out.println(selected.getId());
+                    center.getChildren().remove(webview);
+                    webview = new WebView();
+                    webview.getEngine().reload();
+                    webview.getEngine().load(null);
                     webview.getEngine().load(
                             "https://www.youtube.com/embed/" + selected.getId()
                     );
@@ -165,10 +199,15 @@ public class Main extends Application {
 
     private double width = 1100;
     private double height = 700;
+
     private void setParam(Stage stage){
         stage.setMinWidth(width);
         stage.setMaxWidth(width);
         stage.setMaxHeight(height);
         stage.setMinHeight(height);
+
+
+        left.setMaxWidth(400);
+        scrollPane.setMaxWidth(400);
     }
 }

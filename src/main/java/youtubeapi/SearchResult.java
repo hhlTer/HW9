@@ -3,32 +3,36 @@ package youtubeapi;
 import entiti.Responce;
 import javafx.scene.control.*;
 
+import java.util.ArrayList;
+import java.util.List;
+
 class SearchResult {
-    private ResponceContainer[] containers;
+    private List<ResponceContainer> containers;
     static ToggleGroup toggleGroup = new ToggleGroup();
 
     SearchResult(Responce responce){
+        final int lenthResponce = responce.items.length;
         int count = 0;
-        containers = new ResponceContainer[responce.items.length];
-        for (int j = 0, i = 0; j < containers.length; j++, i++) {
+        containers = new ArrayList<>(lenthResponce);
+        for (int j = 0, i = 0; j < lenthResponce; j++, i++) {
             String radioButton = responce.items[j].snippet.title;
             String channel = "Chanel: " + responce.items[j].snippet.channelTitle;
             String date = responce.items[j].snippet.publishedAt;
             String id = responce.items[j].id.videoId;
             String imageUrl = responce.items[j].snippet.thumbnails.medium.url;
-            System.out.println(i + "i: " + id);
-            System.out.println("j: " + j);
+//            System.out.println(i + "i: " + id);
+//            System.out.println("j: " + j);
             if (id == null) {
                 i--;
                 count++;
                 if (count == 5) break; //if video id is null 5 time in a row - break
                 continue;
             }
-            containers[i] = new ResponceContainer(radioButton, channel, date, id, imageUrl);
+            containers.add(new ResponceContainer(radioButton, channel, date, id, imageUrl));
         }
     }
 
-    public ResponceContainer[] getContainers() {
+    List<ResponceContainer> getContainers() {
         return containers;
     }
 
