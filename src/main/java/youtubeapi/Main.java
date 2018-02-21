@@ -104,12 +104,13 @@ public class Main extends Application {
             if (left.getChildren().size() > 1) left.getChildren().clear();
             Callable<VBox> toLeft = () -> {
                 try {
-                    Responce responce = YoutubeAPI.search(searchField.getText(), 10);
+                    Responce responce = YoutubeAPI.search(searchField.getText(), 5);
                     SearchResult searchResult = new SearchResult(responce);
                     this.containers = searchResult.getContainers();
                     VBox vBoxCallable = new VBox();
-                    for (ResponceContainer container : containers) {
-                        vBoxCallable.getChildren().addAll(container.getNodeList());
+                    System.out.println("containers.length:" + containers.length);
+                    for (int i = 0; i < containers.length; i++) {
+                        vBoxCallable.getChildren().addAll(containers[i].getNodeList());
                     }
                     return vBoxCallable;
                 } catch (UnirestException e) {
@@ -126,7 +127,6 @@ public class Main extends Application {
                         e.printStackTrace();
                     }
                 });
-
             mainPane.setLeft(left);
             service.shutdown();
         });//event->onMouseClicked

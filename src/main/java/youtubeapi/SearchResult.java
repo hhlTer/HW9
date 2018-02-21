@@ -10,16 +10,17 @@ class SearchResult {
     SearchResult(Responce responce){
         int count = 0;
         containers = new ResponceContainer[responce.items.length];
-        for (int i = 0; i < containers.length; i++) {
-            String radioButton = responce.items[i].snippet.title;
-            String channel = "Chanel: " + responce.items[i].snippet.channelTitle;
-            String date = responce.items[i].snippet.publishedAt;
-            String id = responce.items[i].id.videoId;
-            String imageUrl = responce.items[i].snippet.thumbnails.medium.url;
-            System.out.println(i + ": " + id);
+        for (int j = 0, i = 0; j < containers.length; j++, i++) {
+            String radioButton = responce.items[j].snippet.title;
+            String channel = "Chanel: " + responce.items[j].snippet.channelTitle;
+            String date = responce.items[j].snippet.publishedAt;
+            String id = responce.items[j].id.videoId;
+            String imageUrl = responce.items[j].snippet.thumbnails.medium.url;
+            System.out.println(i + "i: " + id);
+            System.out.println("j: " + j);
             if (id == null) {
-                count++;
                 i--;
+                count++;
                 if (count == 5) break; //if video id is null 5 time in a row - break
                 continue;
             }
@@ -27,7 +28,7 @@ class SearchResult {
         }
     }
 
-    ResponceContainer[] getContainers() {
+    public ResponceContainer[] getContainers() {
         return containers;
     }
 
