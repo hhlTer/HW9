@@ -145,7 +145,7 @@ public class Main extends Application {
                          containers) {
                         vBoxCallable.getChildren().addAll(conteiner.getNodeList());
                     }
-                    return vBoxCallable;
+                     return vBoxCallable;
                 } catch (UnirestException e) {
                     e.printStackTrace();
                 }
@@ -153,15 +153,29 @@ public class Main extends Application {
             };
 
             Future<VBox> vBoxFuture = service.submit(toLeft);
-                Platform.runLater(() -> {
-                    try {
-                        left.getChildren().addAll(vBoxFuture.get().getChildren());
-                        scrollPane.setContent(left);
-                        mainPane.setLeft(scrollPane);
-                        playButton.setDisable(false);
-                    } catch (InterruptedException | ExecutionException e) {
-                        e.printStackTrace();
-                    }
+
+            Callable<Boolean> addvBoxFuture = () -> {
+                try {
+                    left.getChildren().addAll(vBoxFuture.get().getChildren());
+                    scrollPane.setContent(left);
+                    mainPane.setLeft(scrollPane);
+                    playButton.setDisable(false);
+                    return true;
+                } catch (InterruptedException | ExecutionException e) {
+                    e.printStackTrace();
+                    return false;
+                }
+            };
+
+            Platform.runLater(() -> {
+
+            try {
+                Future<Boolean> fb = service.submit(addvBoxFuture);
+
+                fb.get();
+            } catch (InterruptedException | ExecutionException e) {
+                e.printStackTrace();
+            }
                 });
             service.shutdown();
             });//event->onMouseClicked: SearchButton
